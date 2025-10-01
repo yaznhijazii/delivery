@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Delivery Dashboard — Manual Processing</title>
+<title>Delivery Dashboard — Interactive</title>
 
 <!-- XLSX -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -17,23 +17,27 @@
   --bg:#f6f8fb; --card:#fff; --primary:#0b67ff; --accent:#1cc4a5; --muted:#98a2b3; --radius:12px;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:'Tajawal',sans-serif;background:var(--bg);color:#0f1724}
+body{margin:0;font-family:'Tajawal',sans-serif;background:var(--bg);color:#0f1724;transition:background 0.3s,color 0.3s}
 header{background:linear-gradient(90deg,var(--primary),#24c0ff 70%);color:white;padding:28px 20px;border-bottom-left-radius:18px;border-bottom-right-radius:18px;box-shadow:0 8px 30px rgba(11,103,255,0.12)}
-header h1{margin:0;font-weight:700;font-size:1.6rem}
+header h1{margin:0;font-weight:700;font-size:1.6rem;animation:fadeIn 1s ease forwards}
 header p{margin:6px 0 0;font-weight:500;opacity:0.9}
 .greeting{overflow:hidden;white-space:nowrap;font-weight:600;margin-top:8px}
 .greeting .text{display:inline-block;transform:translateX(-120%);animation:slidein 1s cubic-bezier(.22,.9,.33,1) forwards;font-size:1.05rem}
 @keyframes slidein{to{transform:translateX(0%)}}
-.wrap{max-width:1100px;margin:26px auto;padding:18px}
-.grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
-.panel{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 6px 22px rgba(15,23,36,0.06)}
-.sheet-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px dashed #e6eef9;margin-bottom:12px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.wrap{max-width:1200px;margin:26px auto;padding:18px}
+.grid{display:grid;grid-template-columns:1fr 480px;gap:18px}
+.panel{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 6px 22px rgba(15,23,36,0.06);transition:transform 0.25s}
+.panel:hover{transform:translateY(-3px)}
+.sheet-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px dashed #e6eef9;margin-bottom:12px;transition:background 0.25s}
+.sheet-row.dragover{background:#eef6ff}
 .sheet-left{flex:1}
 .sheet-left strong{display:block;font-weight:700}
 .sheet-left small{display:block;color:var(--muted);margin-top:4px;font-size:0.86rem}
 .sheet-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-input[type=file]{padding:10px;border-radius:8px;border:1px solid #e8f0ff;background:#f7fbff;cursor:pointer}
-.btn{background:var(--primary);color:white;padding:9px 12px;border-radius:9px;border:none;cursor:pointer;font-weight:600}
+input[type=file]{padding:10px;border-radius:8px;border:1px solid #e8f0ff;background:#f7fbff;cursor:pointer;transition:background 0.2s}
+input[type=file]:hover{background:#eef6ff}
+.btn{background:var(--primary);color:white;padding:9px 12px;border-radius:9px;border:none;cursor:pointer;font-weight:600;transition:all 0.2s}
 .btn.secondary{background:var(--accent)}
 .btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(11,103,255,0.18)}
 .btn:disabled{opacity:0.5;cursor:not-allowed}
@@ -42,26 +46,39 @@ input[type=file]{padding:10px;border-radius:8px;border:1px solid #e8f0ff;backgro
 .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#19b3a0);transition:width .35s ease}
 .spinner{width:22px;height:22px;border-radius:50%;border:3px solid rgba(0,0,0,0.08);border-top-color:var(--primary);animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.summary .card{background:linear-gradient(180deg,#fff,#fbfeff);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(15,23,36,0.04);margin-bottom:12px}
+.summary .card{background:linear-gradient(180deg,#fff,#fbfeff);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(15,23,36,0.04);margin-bottom:12px;transition:transform 0.2s}
+.summary .card:hover{transform:scale(1.02)}
 .report-table{width:100%;border-collapse:collapse;font-size:0.95rem}
 .report-table th{ text-align:left;padding:8px;background:rgba(11,103,255,0.12);color:var(--primary);font-weight:700}
 .report-table td{padding:8px;border-bottom:1px solid #f1f6fb}
 .preview{max-height:300px;overflow:auto;border-radius:10px;border:1px solid #edf4ff;padding:10px}
 table.preview-table{width:100%;border-collapse:collapse;font-size:0.92rem}
-table.preview-table th{background:#f3f8ff;color:var(--primary);padding:8px;text-align:left}
+table.preview-table th{background:#f3f8ff;color:var(--primary);padding:8px;text-align:left;position:sticky;top:0}
 table.preview-table td{padding:8px;border-bottom:1px solid #f5f7fb}
 footer{margin-top:20px;text-align:center;color:#6b7280;font-size:0.9rem}
 .brand{font-weight:700;color:var(--primary)}
 .controls-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
 @media (max-width:980px){.grid{grid-template-columns:1fr}.progress-wrapper{width:140px}}
+.confetti-piece {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background-color: red;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 3px;
+  will-change: transform, opacity;
+}
 </style>
 </head>
 <body>
+
 <header>
   <div class="wrap title-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
     <div>
       <h1>Delivery Dashboard</h1>
-      <p class="subtitle">Upload, Process & Inspect deliveries — you control downloads</p>
+      <p class="subtitle">Upload, Process & Inspect deliveries — Interactive</p>
       <div class="greeting"><span class="text" id="greetingText">مرحباً Waad!</span></div>
     </div>
     <div style="text-align:right">
@@ -72,52 +89,32 @@ footer{margin-top:20px;text-align:center;color:#6b7280;font-size:0.9rem}
 
 <main class="wrap">
 <div class="grid">
-  <!-- LEFT: upload -->
-  <div>
+  <div id="uploadSection">
     <div class="panel">
-      <h3>Upload sheets (per company)</h3>
+      <h3>Upload Sheets (Drag & Drop or Click)</h3>
       <p style="color:var(--muted)">رفع كل ملف لوحده — اضغط "Process" لمعالجة. التنزيل سيكون يدوياً.</p>
       <div id="sheetsContainer"></div>
       <div class="controls-row">
         <button id="downloadMergedBtn" class="btn" disabled>Download Merged</button>
         <button id="clearAllBtn" class="btn ghost">Clear All</button>
       </div>
-      <div style="margin-top:14px;color:var(--muted);font-size:0.9rem">
-        <strong>ملاحظة:</strong> الملفات لا تُنزل تلقائياً.
-      </div>
-    </div>
-
-    <!-- Quick Tips منفصل بدون Powered by -->
-    <div style="margin-top:14px" class="panel">
-      <div>
-        <div style="font-weight:700">Quick Tips</div>
-        <div style="color:var(--muted);margin-top:6px;font-size:0.92rem">
-          ارفع ملف لكل شركة → اضغط Process → راجع الريبورت → حمل الملف.
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- RIGHT: report & preview -->
   <aside>
-    <div class="summary">
+    <div class="summary" id="summaryCards">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:700">Mini Report</div>
-            <div style="color:var(--muted);font-size:0.9rem">ملخص سريع بعد كل معالجة</div>
-          </div>
+          <div style="font-weight:700">Mini Report</div>
           <div style="text-align:right">
             <div style="font-size:0.9rem;color:var(--muted)">Total records</div>
             <div id="totalRecords" style="font-weight:700;font-size:1.2rem">0</div>
           </div>
         </div>
-        <div style="margin-top:12px">
-          <table class="report-table" id="reportTable">
-            <thead><tr><th>Sheet</th><th>Records</th><th>Total Amount</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <table class="report-table" id="reportTable">
+          <thead><tr><th>Sheet</th><th>Records</th><th>Total Amount</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
 
       <div class="card" style="padding-bottom:14px">
@@ -140,32 +137,37 @@ footer{margin-top:20px;text-align:center;color:#6b7280;font-size:0.9rem}
     </div>
   </aside>
 </div>
+</main>
 
-<!-- Footer منفصل -->
 <footer>
   <div>© <span id="year"></span> <span class="brand">Automation</span> — Powered by Yazan Hijazi</div>
 </footer>
-</main>
 
 <script>
+// ======= Initialization =======
 const sheetsOrder = ['DeliveryOne','IDelivery','Zohal','Mailers'];
 const skipRowsMap = {DeliveryOne:2, IDelivery:0, Zohal:0, Mailers:3};
 let processedMap = {};
 let mergedData = [];
 
-// Greeting + date
+// ======= Greeting & Live Time =======
 (function initGreeting(){
-  const now = new Date();
-  const h = now.getHours();
-  document.getElementById('timeNow').innerText = now.toLocaleString('ar-EG',{
-    weekday:'long', day:'numeric', month:'short'
-  });
-  let greet = h<12?'صباح الخير, Waad!':h<18?'مساء الخير, Waad!':'مساء الخير — Waad!';
-  document.getElementById('greetingText').textContent = greet;
-  document.getElementById('year').textContent = now.getFullYear();
+  const nameSpan = `<strong>وعد</strong>`;
+  const updateTime = ()=>{
+    const now = new Date();
+    const h = now.getHours();
+    let emoji='🌞',greetText='صباح الخير';
+    if(h>=12&&h<18){greetText='مساء الخير';emoji='🌇';}
+    else if(h>=18){greetText='مساء متأخر';emoji='🌙';}
+    document.getElementById('greetingText').innerHTML=`${emoji} ${greetText}, ${nameSpan}!`;
+    document.getElementById('timeNow').innerText = now.toLocaleString('ar-EG',{weekday:'long', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+    document.getElementById('year').textContent = now.getFullYear();
+  };
+  updateTime();
+  setInterval(updateTime,60000);
 })();
 
-
+// ======= Upload Rows =======
 const container = document.getElementById('sheetsContainer');
 sheetsOrder.forEach(name=>{
   const row = document.createElement('div');
@@ -191,232 +193,173 @@ sheetsOrder.forEach(name=>{
     </div>`;
   container.appendChild(row);
 
-  const fileInput = row.querySelector(`#${name}Input`);
-  const statusEl = row.querySelector(`#${name}Status`);
-  fileInput.addEventListener('change',e=>{const f=e.target.files[0]; statusEl.textContent=f?`${f.name} selected`:'No file selected';});
+  const fileInput=row.querySelector(`#${name}Input`);
+  const statusEl=row.querySelector(`#${name}Status`);
+  fileInput.addEventListener('change',e=>{const f=e.target.files[0];statusEl.textContent=f?`${f.name} selected`:'No file selected';});
   row.querySelector(`#${name}ProcessBtn`).addEventListener('click',()=>processSheet(name));
   row.querySelector(`#${name}DownloadBtn`).addEventListener('click',()=>downloadSheetFile(name));
+  row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('dragover');});
+  row.addEventListener('dragleave',e=>row.classList.remove('dragover'));
+  row.addEventListener('drop',e=>{e.preventDefault();row.classList.remove('dragover');const file=e.dataTransfer.files[0];if(file)fileInput.files=e.dataTransfer.files;statusEl.textContent=file?`${file.name} selected`:'No file selected';});
 });
 
-async function readExcel(file,skipRows=0){const buff=await file.arrayBuffer();const wb=XLSX.read(buff,{type:'array'});const sheet=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(sheet,{defval:'',range:skipRows});}
+// ======= Excel Reading & Normalization =======
+async function readExcel(file,skipRows=0){
+  const buff=await file.arrayBuffer();
+  const wb=XLSX.read(buff,{type:'array'});
+  const sheet=wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet,{defval:'',range:skipRows});
+}
 function normalizeDate(v){
-  if(!v) return ''; // فارغ → فارغ
+  if(!v) return '';
   if(v instanceof Date && !isNaN(v)) return v.toLocaleDateString();
-
-  // لو الإكسل يعطي رقم (Excel serial date)
-  if(!isNaN(v) && v > 30){ 
-    const d = new Date((v - 25569) * 86400 * 1000); // Excel date → JS date
-    return d.toLocaleDateString();
-  }
-
-  // لو string: 1-1-2025 أو 2025/01/01
-  const parts = String(v).split(/\/|-/);
-  if(parts.length >= 3){
-    let dd, mm, yyyy;
-    // حاول نحدد إذا التنسيق dd/mm/yyyy أو yyyy-mm-dd
-    if(parts[0].length === 4){ // yyyy-mm-dd
-      yyyy = parts[0]; mm = parts[1]; dd = parts[2];
-    } else { // dd/mm/yyyy
-      dd = parts[0]; mm = parts[1]; yyyy = parts[2];
-    }
-    const d = new Date(`${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`);
+  if(!isNaN(v) && v>30){const d=new Date((v-25569)*86400*1000);return d.toLocaleDateString();}
+  const parts=String(v).split(/\/|-/);
+  if(parts.length>=3){
+    let dd,mm,yyyy;
+    if(parts[0].length===4){yyyy=parts[0];mm=parts[1];dd=parts[2];}
+    else{dd=parts[0];mm=parts[1];yyyy=parts[2];}
+    const d=new Date(`${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`);
     if(!isNaN(d)) return d.toLocaleDateString();
   }
-
   return String(v);
 }
 
-function filterSheet(data, sheetName){
-  if(!data || !data.length) return [];
-
-if(sheetName === 'DeliveryOne'){
-  return data
-    .filter((r, i) => i >= 2) // تجاهل أول صفين
-    .filter(r => {
-      const status = (r['Status'] || r['status'] || '').toString().trim().toUpperCase();
-      return ['DELIVERED WITH COLLECTION EXCEPTION', 'DELIVERED WITH COLLECTION', 'DELIVERED']
-        .some(s => status.includes(s));
-    })
-    .map(r => {
-      // ID
-      let id = (r['Contact Person'] || r['Contact'] || '').toString().trim();
-      if(!id) return null; // تجاهل الصفوف الفارغة
-      if(id.startsWith('9') || id.startsWith('8')) return null; // تجاهل الـID اللي يبدأ بـ9 أو 8
-
-      // Amount
-      let amount = Number(r['Collection'] || 0);
-      if(isNaN(amount)) amount = 0;
-
-      // Date
-      let rawDate = r['Status Date'] || r['status date'] || '';
-      let date = '';
-      if(rawDate){
-        let d = typeof rawDate === 'number' ? XLSX.SSF.parse_date_code(rawDate) : new Date(rawDate);
-        if(typeof d === 'object' && d.y){ // Excel number
-          d = new Date(d.y, d.m - 1, d.d);
-        }
-        if(d && !isNaN(d.getTime())){
-          date = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
-        }
-      }
-
-      return { ID: id, Amount: amount, Date: date };
-    })
-    .filter(r => r); // نتخلص من null
-}
-
-  else if(sheetName === 'IDelivery'){
-  return data
-    .map(r => {
-      let id = r['رقم الإرسالية'] || r['Reference'] || r['Ref'] || '';
-      let amount = Number(r['التحصيل'] || r['Amount'] || 0);
-
-      // تحويل التاريخ
-      let rawDate = r['تاريخ التوصيل'] || r['Date'] || '';
-      let dateStr = '';
-      if(typeof rawDate === 'number'){
-        let d = new Date((rawDate - 25569) * 86400 * 1000); // تحويل Excel serial date
-        dateStr = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
-      } else if(rawDate instanceof Date){
-        dateStr = `${rawDate.getMonth()+1}/${rawDate.getDate()}/${rawDate.getFullYear()}`;
-      } else if(rawDate){
-        dateStr = String(rawDate).split(' ')[0];
-      }
-
-      return {ID: id, Amount: amount, Date: dateStr};
-    })
-    .filter(r => r.ID && !r.ID.startsWith('9')); // تجاهل أي ID فارغ أو يبدأ بـ 9
-}
-
-
-else if(sheetName === 'Zohal'){
-  return data
-    .map(r => ({
-      ID: r['الرقم المرجعي'] || r['Reference'] || '',
-      Amount: Number(r['قيمة مجموع التحصيل'] || r['Amount'] || 0),
-      Date: normalizeDate(r['أنشئ في'] || r['created_at'] || '')
-    }))
-    .filter(r => r.Amount > 0); // استثناء الصفوف اللي المبلغ صفر أو فارغ
-}
-
-else if(sheetName === 'Mailers'){
-  return data
-    .map(r => ({
-      ID: r['Reference Number2'] || r['reference2'] || '',
-      Amount: Number(r['COD Value'] || r['Amount'] || 0),
-      Date: normalizeDate(r['Status Date'] || r['status_date'] || r['Date'] || '')
-    }))
-    .filter(r => r.ID && !r.ID.startsWith('9') && !r.ID.startsWith('8'));
-}
-
+// ======= Filter Sheets =======
+function filterSheet(data,sheetName){
+  if(!data||!data.length) return [];
+  if(sheetName==='DeliveryOne'){
+    return data.filter((r,i)=>i>=2).filter(r=>['DELIVERED WITH COLLECTION EXCEPTION','DELIVERED WITH COLLECTION','DELIVERED'].some(s=>(r['Status']||r['status']||'').toString().trim().toUpperCase().includes(s)))
+      .map(r=>{
+        let id=(r['Contact Person']||r['Contact']||'').toString().trim();
+        if(!id||id.startsWith('9')||id.startsWith('8'))return null;
+        let amount=Number(r['Collection']||0);if(isNaN(amount))amount=0;
+        let rawDate=r['Status Date']||r['status date']||'';
+        let date='';
+        if(rawDate){let d=typeof rawDate==='number'?XLSX.SSF.parse_date_code(rawDate):new Date(rawDate);if(typeof d==='object'&&d.y)d=new Date(d.y,d.m-1,d.d);if(d&&!isNaN(d.getTime()))date=`${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;}
+        return {ID:id,Amount:amount,Date:date};
+      }).filter(r=>r);
+  } else if(sheetName==='IDelivery'){
+    return data.map(r=>{
+      let id=r['رقم الإرسالية']||r['Reference']||r['Ref']||'';
+      let amount=Number(r['التحصيل']||r['Amount']||0);
+      let rawDate=r['تاريخ التوصيل']||r['Date']||'';
+      let dateStr='';
+      if(typeof rawDate==='number'){let d=new Date((rawDate-25569)*86400*1000);dateStr=`${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;}
+      else if(rawDate instanceof Date){dateStr=`${rawDate.getMonth()+1}/${rawDate.getDate()}/${rawDate.getFullYear()}`;}
+      else if(rawDate){dateStr=String(rawDate).split(' ')[0];}
+      return {ID:id,Amount:amount,Date:dateStr};
+    }).filter(r=>r.ID&&!r.ID.startsWith('9'));
+  } else if(sheetName==='Zohal'){
+    return data.map(r=>({ID:r['الرقم المرجعي']||r['Reference']||'',Amount:Number(r['قيمة مجموع التحصيل']||r['Amount']||0),Date:normalizeDate(r['أنشئ في']||r['created_at']||'')})).filter(r=>r.Amount>0);
+  } else if(sheetName==='Mailers'){
+    return data.map(r=>({ID:r['Reference Number2']||r['reference2']||'',Amount:Number(r['COD Value']||r['Amount']||0),Date:normalizeDate(r['Status Date']||r['status_date']||r['Date']||'')})).filter(r=>r.ID&&!r.ID.startsWith('9')&&!r.ID.startsWith('8'));
+  }
   return [];
 }
-function showPreview(data){const tbody=document.querySelector('#previewTable tbody');tbody.innerHTML='';(data||[]).slice(0,200).forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${r.ID}</td><td>${r.Amount}</td><td>${r.Date}</td>`;tbody.appendChild(tr);});}
-function formatNumber(n){return Number(n||0).toLocaleString();}
 
-async function processSheet(sheetName){
-  try{
-    const input=document.getElementById(sheetName+'Input');
-    const bar=document.getElementById(sheetName+'Bar');
-    const spinner=document.getElementById(sheetName+'Spinner');
-    const processBtn=document.getElementById(sheetName+'ProcessBtn');
-    const downloadBtn=document.getElementById(sheetName+'DownloadBtn');
-    const statusEl=document.getElementById(sheetName+'Status');
-    if(!input||!input.files||!input.files[0])return alert('Please select file for '+sheetName);
-    processBtn.disabled=true;bar.style.width='8%';spinner.style.display='block';statusEl.textContent='Reading file...';
-    const file=input.files[0];const data=await readExcel(file,skipRowsMap[sheetName]||0);
-    bar.style.width='45%';statusEl.textContent='Filtering...';
-    const filtered=filterSheet(data,sheetName)||[];
-    await new Promise(r=>setTimeout(r,180));
-    bar.style.width='80%';statusEl.textContent=`Processed ${filtered.length} records`;
-    processedMap[sheetName]={rows:filtered,count:filtered.length,totalAmount:filtered.reduce((a,b)=>a+Number(b.Amount||0),0),fileName:file.name};
-    mergedData=mergedData.filter(x=>x._sourceSheet!==sheetName);
-    const enriched=filtered.map(r=>({...r,_sourceSheet:sheetName}));
-    mergedData=mergedData.concat(enriched);
-    downloadBtn.disabled=filtered.length===0;document.getElementById('downloadMergedBtn').disabled=mergedData.length===0;
-    showPreview(filtered);updateReportTable();updateChart();
-    bar.style.width='100%';await new Promise(r=>setTimeout(r,260));bar.style.width='0%';spinner.style.display='none';processBtn.disabled=false;statusEl.textContent=`${file.name} — ${filtered.length} records`;
-  }catch(err){console.error(err);alert('Error processing '+sheetName+': '+(err.message||err));document.getElementById(sheetName+'ProcessBtn').disabled=false;document.getElementById(sheetName+'Spinner').style.display='none';}
+// ======= Show Preview =======
+function showPreview(data){
+  const tbody=document.querySelector('#previewTable tbody');
+  tbody.innerHTML='';
+  data.slice(0,10).forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.ID}</td><td>${r.Amount}</td><td>${r.Date}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
-function updateReportTable(){const tbody=document.querySelector('#reportTable tbody');tbody.innerHTML='';let totalRec=0;Object.keys(processedMap).forEach(k=>{const p=processedMap[k];const tr=document.createElement('tr');tr.innerHTML=`<td>${k}</td><td>${p.count}</td><td>${formatNumber(p.totalAmount)}</td>`;tbody.appendChild(tr);totalRec+=p.count;});document.getElementById('totalRecords').innerText=totalRec;}
+// ======= Process Sheet =======
+async function processSheet(sheetName){
+  const fileInput=document.getElementById(sheetName+'Input');
+  if(!fileInput.files[0]) return alert('Please select a file first!');
+  const bar=document.getElementById(sheetName+'Bar'); const spinner=document.getElementById(sheetName+'Spinner');
+  bar.style.width='0%'; spinner.style.display='inline-block';
+  const data=await readExcel(fileInput.files[0],skipRowsMap[sheetName]||0);
+  const filtered=filterSheet(data,sheetName);
+  processedMap[sheetName]=filtered;
+  mergedData=Object.values(processedMap).flat();
+  bar.style.width='100%'; spinner.style.display='none';
+  document.getElementById(sheetName+'DownloadBtn').disabled=false;
+  updateStats();
+  showPreview(filtered);
+  document.getElementById('downloadMergedBtn').disabled = Object.keys(processedMap).length===0?true:false;
+}
 
-function downloadSheetFile(sheetName){const p=processedMap[sheetName];if(!p||!p.rows||p.rows.length===0)return alert('No processed data for '+sheetName);const ws=XLSX.utils.json_to_sheet(p.rows.map(r=>({InvoiceID:r.ID,ReceivedAmount:r.Amount,ReceivedDate:r.Date})));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);XLSX.writeFile(wb,`Processed_${sheetName}.xlsx`);}
+// ======= Update Summary =======
+function updateStats(){
+  const total=document.getElementById('totalRecords'); total.textContent=mergedData.length;
+  const tbody=document.querySelector('#reportTable tbody'); tbody.innerHTML='';
+  Object.keys(processedMap).forEach(s=>{
+    const rows=processedMap[s]||[];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${s}</td><td>${rows.length}</td><td>${rows.reduce((a,b)=>a+b.Amount,0).toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+  updateChart();
+}
+
+// ======= Chart =======
+let chartInstance=null;
+function updateChart(){
+  const ctx=document.getElementById('miniChart').getContext('2d');
+  const labels=Object.keys(processedMap); const values=labels.map(l=>processedMap[l].length);
+  if(chartInstance) chartInstance.data={labels,datasets:[{label:'Records',data:values,backgroundColor:'#0b67ff88'}]}, chartInstance.update();
+  else chartInstance=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Records',data:values,backgroundColor:'#0b67ff88'}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+}
+
+// ======= Download Individual Sheet =======
+function downloadSheetFile(sheetName){
+  const data=processedMap[sheetName]||[]; if(!data.length)return;
+  const ws=XLSX.utils.json_to_sheet(data); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,sheetName); XLSX.writeFile(wb,sheetName+'_Processed.xlsx');
+}
+
+// ======= Download Merged =======
 document.getElementById('downloadMergedBtn').addEventListener('click',()=>{
-  if(!mergedData||mergedData.length===0) return alert('No merged data');
-
-  // تأكد أنه تم معالجة كل الشيتات اللي تم رفعها
-  const processedSheets = Object.keys(processedMap);
-  if(processedSheets.length < sheetsOrder.filter(s=>{
-    const inp = document.getElementById(s+'Input');
-    return inp && inp.files && inp.files.length>0;
-  }).length){
-    return alert('Please process all uploaded sheets before downloading the merged file');
-  }
-
-  // حذف عمود Sheet قبل التحويل
-  const payload = mergedData.map(r => ({
-    InvoiceID: r.ID,
-    ReceivedAmount: r.Amount,
-    ReceivedDate: r.Date
-  }));
-
-  const ws=XLSX.utils.json_to_sheet(payload);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Merged');
+  if(!mergedData.length) return alert('No data!');
+  const requiredSheets = sheetsOrder.filter(s=>document.getElementById(s+'Input').files.length>0);
+  if(requiredSheets.some(s=>!processedMap[s])) return alert('Please process all uploaded sheets before downloading merged file!');
+  const payload = mergedData.map(r=>({InvoiceID:r.ID, ReceivedAmount:r.Amount, ReceivedDate:r.Date}));
+  const ws=XLSX.utils.json_to_sheet(payload); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Merged'); 
   XLSX.writeFile(wb,'Merged_Delivery.xlsx');
+  launchConfetti();
 });
 
-document.getElementById('clearAllBtn').addEventListener('click',()=>{if(!confirm('Clear all processed data?'))return;processedMap={};mergedData=[];updateReportTable();updateChart();showPreview([]);sheetsOrder.forEach(s=>{const dl=document.getElementById(s+'DownloadBtn');if(dl)dl.disabled=true;const inp=document.getElementById(s+'Input');if(inp)inp.value='';const st=document.getElementById(s+'Status');if(st)st.textContent='No file selected';});document.getElementById('downloadMergedBtn').disabled=true;});
-
-// تحديث Chart مع ألوان محددة
-// تحديث Chart مع الألوان الجديدة
-let chartInstance = null;
-const chartColors = {
-  DeliveryOne: '#ff886f', // أصفر فاتح
-  IDelivery: '#f9f871',   // برتقالي
-  Zohal: '#ff4f6d',       // وردي أحمر
-  Mailers: '#359a98'      // وردي أحمر
-};
-
-function updateChart(){
-  const ctx = document.getElementById('miniChart').getContext('2d');
-  const labels = [];
-  const data = [];
-  const colors = [];
-  Object.keys(processedMap).forEach(k=>{
-    labels.push(k);
-    data.push(processedMap[k].count||0);
-    colors.push(chartColors[k]||'#0b67ff');
+// ======= Clear All =======
+document.getElementById('clearAllBtn').addEventListener('click',()=>{
+  processedMap={}; mergedData=[]; updateStats(); showPreview([]);
+  sheetsOrder.forEach(s=>{
+    const fi=document.getElementById(s+'Input'); fi.value=''; document.getElementById(s+'Status').textContent='No file selected';
+    document.getElementById(s+'Bar').style.width='0%'; document.getElementById(s+'DownloadBtn').disabled=true;
   });
+  document.getElementById('downloadMergedBtn').disabled=true;
+});
 
-  if(chartInstance){
-    chartInstance.data.labels = labels;
-    chartInstance.data.datasets[0].data = data;
-    chartInstance.data.datasets[0].backgroundColor = colors;
-    chartInstance.update();
-    return;
+// ======= Confetti =======
+function launchConfetti(){
+  const colors = ['#ff595e','#ffca3a','#8ac926','#1982c4','#6a4c93'];
+  const count = 150;
+  for(let i=0;i<count;i++){
+    const conf = document.createElement('div');
+    conf.className = 'confetti-piece';
+    conf.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+    conf.style.left = Math.random()*window.innerWidth+'px';
+    conf.style.top = '-10px';
+    conf.style.width = conf.style.height = 5+Math.random()*5+'px';
+    conf.style.opacity = Math.random()*0.8+0.2;
+    document.body.appendChild(conf);
+    const fallDuration = 2000 + Math.random()*2000;
+    const endX = (Math.random()-0.5)*200;
+    const endY = window.innerHeight + 20;
+    conf.animate([
+      {transform:`translate(0,0) rotate(0deg)`, opacity:conf.style.opacity},
+      {transform:`translate(${endX}px,${endY}px) rotate(${Math.random()*720}deg)`, opacity:0}
+    ],{duration:fallDuration,easing:'ease-out'});
+    setTimeout(()=>{conf.remove()},fallDuration);
   }
-
-  chartInstance = new Chart(ctx,{
-    type:'pie',
-    data:{
-      labels,
-      datasets:[{
-        data,
-        backgroundColor: colors
-      }]
-    },
-    options:{
-      responsive: true,
-      plugins:{
-        legend:{position:'right'}
-      }
-    }
-  });
 }
-
-updateChart();
 </script>
 </body>
 </html>
