@@ -240,7 +240,8 @@ if(sheetName === 'DeliveryOne'){
     .map(r => {
       // ID
       let id = (r['Contact Person'] || r['Contact'] || '').toString().trim();
-      if(!id) return null; // فقط تجاهل الصفوف الفارغة
+      if(!id) return null; // تجاهل الصفوف الفارغة
+      if(id.startsWith('9') || id.startsWith('8')) return null; // تجاهل الـID اللي يبدأ بـ9 أو 8
 
       // Amount
       let amount = Number(r['Collection'] || 0);
