@@ -199,14 +199,116 @@ sheetsOrder.forEach(name=>{
 });
 
 async function readExcel(file,skipRows=0){const buff=await file.arrayBuffer();const wb=XLSX.read(buff,{type:'array'});const sheet=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(sheet,{defval:'',range:skipRows});}
-function normalizeDate(v){if(!v)return'';const d=new Date(v);if(!isNaN(d.getTime()))return d.toLocaleDateString();const parts=String(v).split(/\/|-/);if(parts.length>=3){const dd=new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);if(!isNaN(dd.getTime()))return dd.toLocaleDateString()}return String(v);}
-function filterSheet(data,sheetName){
-  if(!data||!data.length)return[];
-  if(sheetName==='DeliveryOne')return data.map(r=>({ID:r['Contact Person']||r['Contact']||'',Amount:Number(r['Collection']||0)||0,Date:normalizeDate(r['Status Date']||r['status date']||'')}))
-  else if(sheetName==='IDelivery')return data.map(r=>({ID:r['رقم الإرسالية']||r['Reference']||r['Ref']||'',Amount:Number(r['التحصيل']||0)||0,Date:normalizeDate(r['تاريخ التوصيل']||r['Date']||'')}))
-  else if(sheetName==='Zohal')return data.map(r=>({ID:r['الرقم المرجعي']||r['Reference']||'',Amount:Number(r['قيمة مجموع التحصيل']||0)||0,Date:normalizeDate(r['أنشئ في']||r['created_at']||'')}))
-  else if(sheetName==='Mailers')return data.map(r=>({ID:r['Reference Number2']||r['reference2']||'',Amount:Number(r['COD Value']||0)||0,Date:normalizeDate(r['Status Date']||r['status_date']||'')}))
-  return[];
+function normalizeDate(v){
+  if(!v) return ''; // فارغ → فارغ
+  if(v instanceof Date && !isNaN(v)) return v.toLocaleDateString();
+
+  // لو الإكسل يعطي رقم (Excel serial date)
+  if(!isNaN(v) && v > 30){ 
+    const d = new Date((v - 25569) * 86400 * 1000); // Excel date → JS date
+    return d.toLocaleDateString();
+  }
+
+  // لو string: 1-1-2025 أو 2025/01/01
+  const parts = String(v).split(/\/|-/);
+  if(parts.length >= 3){
+    let dd, mm, yyyy;
+    // حاول نحدد إذا التنسيق dd/mm/yyyy أو yyyy-mm-dd
+    if(parts[0].length === 4){ // yyyy-mm-dd
+      yyyy = parts[0]; mm = parts[1]; dd = parts[2];
+    } else { // dd/mm/yyyy
+      dd = parts[0]; mm = parts[1]; yyyy = parts[2];
+    }
+    const d = new Date(`${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`);
+    if(!isNaN(d)) return d.toLocaleDateString();
+  }
+
+  return String(v);
+}
+
+function filterSheet(data, sheetName){
+  if(!data || !data.length) return [];
+
+if(sheetName === 'DeliveryOne'){
+  return data
+    .filter((r, i) => i >= 2) // تجاهل أول صفين
+    .filter(r => {
+      const status = (r['Status'] || r['status'] || '').toString().trim().toUpperCase();
+      return ['DELIVERED WITH COLLECTION EXCEPTION', 'DELIVERED WITH COLLECTION', 'DELIVERED']
+        .some(s => status.includes(s));
+    })
+    .map(r => {
+      // ID
+      let id = (r['Contact Person'] || r['Contact'] || '').toString().trim();
+      if(!id) return null; // فقط تجاهل الصفوف الفارغة
+
+      // Amount
+      let amount = Number(r['Collection'] || 0);
+      if(isNaN(amount)) amount = 0;
+
+      // Date
+      let rawDate = r['Status Date'] || r['status date'] || '';
+      let date = '';
+      if(rawDate){
+        let d = typeof rawDate === 'number' ? XLSX.SSF.parse_date_code(rawDate) : new Date(rawDate);
+        if(typeof d === 'object' && d.y){ // Excel number
+          d = new Date(d.y, d.m - 1, d.d);
+        }
+        if(d && !isNaN(d.getTime())){
+          date = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+        }
+      }
+
+      return { ID: id, Amount: amount, Date: date };
+    })
+    .filter(r => r); // نتخلص من null
+}
+
+  else if(sheetName === 'IDelivery'){
+  return data
+    .map(r => {
+      let id = r['رقم الإرسالية'] || r['Reference'] || r['Ref'] || '';
+      let amount = Number(r['التحصيل'] || r['Amount'] || 0);
+
+      // تحويل التاريخ
+      let rawDate = r['تاريخ التوصيل'] || r['Date'] || '';
+      let dateStr = '';
+      if(typeof rawDate === 'number'){
+        let d = new Date((rawDate - 25569) * 86400 * 1000); // تحويل Excel serial date
+        dateStr = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+      } else if(rawDate instanceof Date){
+        dateStr = `${rawDate.getMonth()+1}/${rawDate.getDate()}/${rawDate.getFullYear()}`;
+      } else if(rawDate){
+        dateStr = String(rawDate).split(' ')[0];
+      }
+
+      return {ID: id, Amount: amount, Date: dateStr};
+    })
+    .filter(r => r.ID && !r.ID.startsWith('9')); // تجاهل أي ID فارغ أو يبدأ بـ 9
+}
+
+
+else if(sheetName === 'Zohal'){
+  return data
+    .map(r => ({
+      ID: r['الرقم المرجعي'] || r['Reference'] || '',
+      Amount: Number(r['قيمة مجموع التحصيل'] || r['Amount'] || 0),
+      Date: normalizeDate(r['أنشئ في'] || r['created_at'] || '')
+    }))
+    .filter(r => r.Amount > 0); // استثناء الصفوف اللي المبلغ صفر أو فارغ
+}
+
+else if(sheetName === 'Mailers'){
+  return data
+    .map(r => ({
+      ID: r['Reference Number2'] || r['reference2'] || '',
+      Amount: Number(r['COD Value'] || r['Amount'] || 0),
+      Date: normalizeDate(r['Status Date'] || r['status_date'] || r['Date'] || '')
+    }))
+    .filter(r => r.ID && !r.ID.startsWith('9') && !r.ID.startsWith('8'));
+}
+
+  return [];
 }
 function showPreview(data){const tbody=document.querySelector('#previewTable tbody');tbody.innerHTML='';(data||[]).slice(0,200).forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${r.ID}</td><td>${r.Amount}</td><td>${r.Date}</td>`;tbody.appendChild(tr);});}
 function formatNumber(n){return Number(n||0).toLocaleString();}
