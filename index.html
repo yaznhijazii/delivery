@@ -342,12 +342,31 @@ async function processSheet(sheetName){
 function updateReportTable(){const tbody=document.querySelector('#reportTable tbody');tbody.innerHTML='';let totalRec=0;Object.keys(processedMap).forEach(k=>{const p=processedMap[k];const tr=document.createElement('tr');tr.innerHTML=`<td>${k}</td><td>${p.count}</td><td>${formatNumber(p.totalAmount)}</td>`;tbody.appendChild(tr);totalRec+=p.count;});document.getElementById('totalRecords').innerText=totalRec;}
 
 function downloadSheetFile(sheetName){const p=processedMap[sheetName];if(!p||!p.rows||p.rows.length===0)return alert('No processed data for '+sheetName);const ws=XLSX.utils.json_to_sheet(p.rows.map(r=>({InvoiceID:r.ID,ReceivedAmount:r.Amount,ReceivedDate:r.Date})));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);XLSX.writeFile(wb,`Processed_${sheetName}.xlsx`);}
-document.getElementById('downloadMergedBtn').addEventListener('click',()=>{if(!mergedData||mergedData.length===0)return alert('No merged data');const payload = mergedData.map(r => ({
-  Sheet: r._sourceSheet||'',
-  InvoiceID: r.ID,
-  ReceivedAmount: r.Amount,
-  ReceivedDate: r.Date
-}));const ws=XLSX.utils.json_to_sheet(payload);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Merged');XLSX.writeFile(wb,'Merged_Delivery.xlsx');});
+document.getElementById('downloadMergedBtn').addEventListener('click',()=>{
+  if(!mergedData||mergedData.length===0) return alert('No merged data');
+
+  // تأكد أنه تم معالجة كل الشيتات اللي تم رفعها
+  const processedSheets = Object.keys(processedMap);
+  if(processedSheets.length < sheetsOrder.filter(s=>{
+    const inp = document.getElementById(s+'Input');
+    return inp && inp.files && inp.files.length>0;
+  }).length){
+    return alert('Please process all uploaded sheets before downloading the merged file');
+  }
+
+  // حذف عمود Sheet قبل التحويل
+  const payload = mergedData.map(r => ({
+    InvoiceID: r.ID,
+    ReceivedAmount: r.Amount,
+    ReceivedDate: r.Date
+  }));
+
+  const ws=XLSX.utils.json_to_sheet(payload);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Merged');
+  XLSX.writeFile(wb,'Merged_Delivery.xlsx');
+});
+
 document.getElementById('clearAllBtn').addEventListener('click',()=>{if(!confirm('Clear all processed data?'))return;processedMap={};mergedData=[];updateReportTable();updateChart();showPreview([]);sheetsOrder.forEach(s=>{const dl=document.getElementById(s+'DownloadBtn');if(dl)dl.disabled=true;const inp=document.getElementById(s+'Input');if(inp)inp.value='';const st=document.getElementById(s+'Status');if(st)st.textContent='No file selected';});document.getElementById('downloadMergedBtn').disabled=true;});
 
 // تحديث Chart مع ألوان محددة
