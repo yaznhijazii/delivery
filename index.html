@@ -240,9 +240,10 @@ function updateReportTable(){const tbody=document.querySelector('#reportTable tb
 
 function downloadSheetFile(sheetName){const p=processedMap[sheetName];if(!p||!p.rows||p.rows.length===0)return alert('No processed data for '+sheetName);const ws=XLSX.utils.json_to_sheet(p.rows.map(r=>({InvoiceID:r.ID,ReceivedAmount:r.Amount,ReceivedDate:r.Date})));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheetName);XLSX.writeFile(wb,`Processed_${sheetName}.xlsx`);}
 document.getElementById('downloadMergedBtn').addEventListener('click',()=>{if(!mergedData||mergedData.length===0)return alert('No merged data');const payload = mergedData.map(r => ({
-  'Invoice ID': r.ID,
-  'Received Amount': r.Amount,
-  'Received Date': r.Date
+  Sheet: r._sourceSheet||'',
+  InvoiceID: r.ID,
+  ReceivedAmount: r.Amount,
+  ReceivedDate: r.Date
 }));const ws=XLSX.utils.json_to_sheet(payload);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Merged');XLSX.writeFile(wb,'Merged_Delivery.xlsx');});
 document.getElementById('clearAllBtn').addEventListener('click',()=>{if(!confirm('Clear all processed data?'))return;processedMap={};mergedData=[];updateReportTable();updateChart();showPreview([]);sheetsOrder.forEach(s=>{const dl=document.getElementById(s+'DownloadBtn');if(dl)dl.disabled=true;const inp=document.getElementById(s+'Input');if(inp)inp.value='';const st=document.getElementById(s+'Status');if(st)st.textContent='No file selected';});document.getElementById('downloadMergedBtn').disabled=true;});
 
